@@ -1,9 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const { getDoctors, getDoctorById, createDoctor, deleteDoctor, updateDoctor } = require("../controllers/doctorController");
+const {
+  getDoctors,
+  getDoctorById,
+  createDoctor,
+  deleteDoctor,
+  updateDoctor,
+} = require("../controllers/doctorController");
 
 // Get All Doctor
-router.get("/", getDoctors);
+router.get("/", getDoctorById);
 
 // Get Single Doctor
 router.get("/:id", getDoctorById);
