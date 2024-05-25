@@ -9,7 +9,7 @@ const {
 } = require("../controllers/DoctorController");
 
 // Get All Doctor
-router.get("/", getDoctorById);
+router.get("/", getDoctors);
 
 // Get Single Doctor
 router.get("/:id", getDoctorById);
