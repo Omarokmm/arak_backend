@@ -3,7 +3,7 @@ const express = require("express");
 const workoutsRoutes = require("./routes/workouts");
 const usersRoutes = require("./routes/userRoutes");
 const departmentsRoutes = require("./routes/departmentRoutes");
-// const doctorRoutes = require("./routes/doctorRoutes");
+const doctorsRoutes = require("./routes/doctorRoutes");
 const casesRoutes = require("./routes/casesRoutes");
 const mongoose = require("mongoose");
 const { loginValidator } = require("./helper/validator");
@@ -33,7 +33,7 @@ app.get("/", (req, res) => {
 app.use("/api/workouts", workoutsRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/departments", departmentsRoutes);
-// app.use("/api/doctors", doctorRoutes);
+app.use("/api/doctors", doctorsRoutes);
 app.use("/api/cases", casesRoutes);
 app.post("/login", loginValidator, loginUser);
 mongoose
