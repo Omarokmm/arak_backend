@@ -10,7 +10,7 @@ const { loginValidator } = require("./helper/validator");
 const {
   loginUser
 } = require("./controllers/userController");
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 4000;
 // express app
 const app = express();
 const cors = require("cors");
