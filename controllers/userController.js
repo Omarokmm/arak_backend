@@ -1,4 +1,5 @@
 const User = require("../models/UserModel");
+const Case = require("../models/CaseModel");
 const Department = require("../models/DepartmentModel");
 const responsesStatus = require("../enum/responsesStatus");
 const mongoose = require("mongoose");
@@ -16,6 +17,34 @@ const getUsers = async (req, res) => {
   }
 };
 
+// Get Cases by Users 
+const getCasesByUser = async (req, res) => {
+  const technicianId = req.params.id;
+  const results = [];
+  let count = 0;
+
+  try {
+    const cases = await Case.find();
+
+    cases.forEach(caseItem => {
+      ['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking'].forEach(phase => {
+        if (caseItem[phase] && caseItem[phase].status.isEnd ) {
+          caseItem[phase].actions.forEach(action => {
+            if (action.technicianId === technicianId && action.dateEnd) {
+              count++
+              results.push(caseItem);
+            }
+          });
+        }
+      });
+    });
+
+    res.json(results);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+  
+}
 // Get User By Id
 const getUserById = async (req, res) => {
   const { id } = req.params;
@@ -259,5 +288,6 @@ module.exports = {
   getUserById,
   deleteUser,
   updateUser,
-  changePassword
+  changePassword,
+  getCasesByUser
 };

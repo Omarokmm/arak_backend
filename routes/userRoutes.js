@@ -9,11 +9,15 @@ const {
   deleteUser,
   updateUser,
   loginUser,
-  changePassword
+  changePassword,
+  getCasesByUser
 } = require("../controllers/userController");
 // Get All Users
 router.get("/", getUsers);
  
+// Get Cases by Users 
+router.get("/actions/:id", getCasesByUser);
+
 // Get Single User
 router.get("/:id", getUserById);
 
