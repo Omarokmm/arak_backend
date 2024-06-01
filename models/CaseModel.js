@@ -174,6 +174,16 @@ const CaseSchema = new Schema(
       },
       obj: Object,
     },
+    delivering: {
+      namePhase: String,
+      actions: Array,
+      status: {
+        isStart: { type: Boolean, default: false },
+        isPause: { type: Boolean, default: false },
+        isEnd: { type: Boolean, default: false },
+      },
+      obj: Object,
+    },
     receptionPacking: {
       namePhase: String,
       actions: Array,

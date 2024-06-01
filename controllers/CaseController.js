@@ -67,6 +67,7 @@ const createCase = async (req, res) => {
     ceramic,
     qualityControl,
     designing,
+    delivering,
     receptionPacking,
     logs,
   } = req.body;
@@ -109,6 +110,7 @@ const createCase = async (req, res) => {
       ceramic,
       designing,
       qualityControl,
+      delivering,
       receptionPacking,
       logs,
     });
