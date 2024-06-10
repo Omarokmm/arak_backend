@@ -38,8 +38,7 @@ const CaseSchema = new Schema(
       required: true,
     },
     gender: {
-      type: String,
-      enum: ["Male", "Female", "Other"],
+      type: String
     },
     age: {
       type: String,
