@@ -6,7 +6,8 @@ const { validationResult } = require("express-validator");
 
 // Get All Cases
 const getAllCases = async (req, res) => {
-  const cases = await Case.find({});
+  // const cases = await Case.find({});
+  const cases = await Case.find({}).sort({ createdAt: -1 });
   try {
     res.status(responsesStatus.OK).json(cases);
   } catch (error) {

@@ -21,6 +21,7 @@ const CaseSchema = new Schema(
     dateOut: {
       type: Date,
       default: Date.now,
+      required: true,
     },
     dentistObj: {
       id: { type: String, required: true },
