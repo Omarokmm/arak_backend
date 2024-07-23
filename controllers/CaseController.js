@@ -26,7 +26,7 @@ const getCaseById = async (req, res) => {
     if (!buffCase) {
       res.status(responsesStatus.NotFound).json({ error: "No Such Case!" });
     }
-    res.status(responsesStatus.OK).json(doctor);
+    res.status(responsesStatus.OK).json(buffCase);
   } catch (error) {
     res.status(responsesStatus.BadRequest).json({ error: error.message });
   }
