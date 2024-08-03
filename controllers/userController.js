@@ -7,15 +7,18 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken"); 
 const {validationResult} = require("express-validator");
 
+
+
 // Get All User
 const getUsers = async (req, res) => {
-  const users = await User.find({});
+  const users = await  User.find().populate('departments', '_id name');
   try {
     res.status(responsesStatus.OK).json(users);
   } catch (error) {
     res.status(responsesStatus.NotFound).json({ error: "Not Found" });
   }
 };
+
 
 // Get Cases by Users 
 const getCasesByUser = async (req, res) => {
