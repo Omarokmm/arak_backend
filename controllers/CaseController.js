@@ -14,6 +14,26 @@ const getAllCases = async (req, res) => {
     res.status(responsesStatus.NotFound).json({ error: "Not Found" });
   }
 };
+const getAllCasesByDoctor = async (req, res) => {
+  const { id } = req.params;
+  console.log("id", id);
+
+  try {
+    // Retrieve all cases from the database
+    const cases = await Case.find({});
+
+    // Filter cases to find those associated with the specified doctor (dentist)
+    const casesFilter = cases.filter(caseItem => caseItem.dentistObj.id == id);
+
+    // Respond with the filtered cases
+    res.status(responsesStatus.OK).json(casesFilter);
+  } catch (error) {
+    // Handle errors, e.g., database errors
+    console.error(error);
+    res.status(responsesStatus.NotFound).json({ error: "Not Found" });
+  }
+};
+
 
 // Get Case By Id
 const getCaseById = async (req, res) => {
@@ -233,6 +253,7 @@ module.exports = {
   getAllCases,
   getCaseById,
   createCase,
+  getAllCasesByDoctor,
   deleteCase,
   updateCase,
   updateProcessCase,

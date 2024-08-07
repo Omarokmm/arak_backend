@@ -25,10 +25,8 @@ const getCasesByUser = async (req, res) => {
   const technicianId = req.params.id;
   const results = [];
   let count = 0;
-
   try {
     const cases = await Case.find();
-
     cases.forEach(caseItem => {
       ['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking'].forEach(phase => {
         if (caseItem[phase] && caseItem[phase].status.isEnd ) {

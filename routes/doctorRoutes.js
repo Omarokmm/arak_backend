@@ -7,9 +7,13 @@ const {
   deleteDoctor,
   updateDoctor,
 } = require("../controllers/DoctorController");
+const { getAllCasesByDoctor } = require("../controllers/CaseController");
 
 // Get All Doctor
 router.get("/", getDoctors);
+
+// Get All Cases By  Doctor
+router.get("/casesbydoctor/:id", getAllCasesByDoctor);
 
 // Get Single Doctor
 router.get("/:id", getDoctorById);
