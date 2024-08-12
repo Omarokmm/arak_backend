@@ -5,6 +5,7 @@ const usersRoutes = require("./routes/userRoutes");
 const departmentsRoutes = require("./routes/departmentRoutes");
 const doctorsRoutes = require("./routes/doctorRoutes");
 const casesRoutes = require("./routes/casesRoutes");
+const shipmentRoutes = require("./routes/shipmentRoutes");
 const mongoose = require("mongoose");
 const { loginValidator } = require("./helper/validator");
 const {
@@ -35,6 +36,7 @@ app.use("/api/users", usersRoutes);
 app.use("/api/departments", departmentsRoutes);
 app.use("/api/doctors", doctorsRoutes);
 app.use("/api/cases", casesRoutes);
+app.use("/api/shipments", shipmentRoutes);
 app.post("/login", loginValidator, loginUser);
 mongoose
   .connect(process.env.MONGO_URL)
