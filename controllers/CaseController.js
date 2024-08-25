@@ -224,24 +224,33 @@ const updateProcessCase = async (req, res) => {
 };
 const updateIsHoldCase = async (req, res) => {
   const { id, isHold } = req.params;
-  const { logs } = req.body;
+  const buffHistoryHolding = req.body
+  console.log(buffHistoryHolding)
   try {
-    const updatedCase = await Case.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          [`isHold`]: isHold,
-          [`logs`]: logs,
-        },
-      },
-      { new: true }
-    );
-
-    if (!updatedCase) {
+    // First, find the document to check if `historyHolding` exists
+    const existingCase = await Case.findById(id);
+    
+    if (!existingCase) {
       res.status(404).json({ message: "Case not found" });
       return;
     }
 
+    const updatedCase = await Case.findByIdAndUpdate(
+      id,
+      existingCase.historyHolding
+      ? {
+        $set: {
+          ["isHold"]: isHold,
+          ["historyHolding"]: req.body,
+        }
+        }
+      : {
+        $set: {["isHold"]: isHold,},
+        $push: { historyHolding: { $each: buffHistoryHolding } }  // Append new items to existing array
+        },
+      { new: true }
+    );
+    console.log('updatedCase',updatedCase)
     res.json(updatedCase);
   } catch (error) {
     console.error(error);

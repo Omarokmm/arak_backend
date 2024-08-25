@@ -10,7 +10,8 @@ const {
   updateUser,
   loginUser,
   changePassword,
-  getCasesByUser
+  getCasesByUser,
+  getCasesAllByUser
 } = require("../controllers/userController");
 // Get All Users
 router.get("/", getUsers);

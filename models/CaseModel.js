@@ -199,6 +199,10 @@ const CaseSchema = new Schema(
       type: Array,
       default: [],
     },
+    historyHolding: {
+      type: Array,
+      default: [],
+    },
   },
   { timestamps: true }
 );

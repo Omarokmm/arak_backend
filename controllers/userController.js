@@ -7,8 +7,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken"); 
 const {validationResult} = require("express-validator");
 
-
-
 // Get All User
 const getUsers = async (req, res) => {
   const users = await  User.find().populate('departments', '_id name');
@@ -23,29 +21,85 @@ const getUsers = async (req, res) => {
 // Get Cases by Users 
 const getCasesByUser = async (req, res) => {
   const technicianId = req.params.id;
-  const results = [];
+  const caseIdsProcessed = new Set(); // Set to track unique case IDs
+  const caseIdsProcessedPause = new Set(); // Set to track unique case IDs
+  const resultsEnd = [];
+  const resultsStart = [];
+  const resultsPause = [];
+  const resultsHolding = [];
   let count = 0;
+  let count1 = 0;
   try {
     const cases = await Case.find();
+    // Cases Ended
     cases.forEach(caseItem => {
       ['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking'].forEach(phase => {
         if (caseItem[phase] && caseItem[phase].status.isEnd ) {
           caseItem[phase].actions.forEach(action => {
             if (action.technicianId === technicianId && action.dateEnd) {
               count++
-              results.push(caseItem);
+              resultsEnd.push(caseItem);
             }
           });
         }
       });
     });
-
-    res.json(results);
+    // Cases are Starting
+    cases.forEach(caseItem => {
+      // Check all the relevant phases
+      ['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking'].forEach(phase => {
+        const lastAction = caseItem[phase].actions[caseItem[phase].actions.length - 1];
+        if (lastAction?.prfeix === 'start') {
+          caseItem[phase].actions.forEach(action => {
+            if (lastAction.technicianId === technicianId) {
+              // Check if this case ID has already been processed
+              if (!caseIdsProcessed.has(caseItem._id.toString())) {
+                caseIdsProcessed.add(caseItem._id.toString());
+                resultsStart.push(caseItem);
+              }
+              count1++;
+            }
+          });
+        }
+      });
+    });
+    // Cases are Pausing
+    cases.forEach(caseItem => {
+      // Check all the relevant phases
+      ['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking'].forEach(phase => {
+        const lastActionPause = caseItem[phase].actions[caseItem[phase].actions.length - 1];
+        if (lastActionPause?.prfeix === 'pause') {
+          caseItem[phase].actions.forEach(action => {
+            if (lastActionPause.technicianId === technicianId) {
+              // Check if this case ID has already been processed
+              if (!caseIdsProcessedPause.has(caseItem._id.toString())) {
+                caseIdsProcessedPause.add(caseItem._id.toString());
+                resultsPause.push(caseItem);
+              }
+              count1++;
+            }
+          });
+        }
+      });
+    });
+    // Holding cad Cam
+    cases.forEach(caseItem => {
+      // Check all the relevant phases
+      if(caseItem.isHold && caseItem?.historyHolding[caseItem.historyHolding.length - 1]?.id === technicianId){
+        resultsHolding.push(caseItem);
+      }
+    });
+    res.json({
+      casesEnd: resultsEnd,
+      casesStart: resultsStart,
+      casesPause: resultsPause,
+      casesHolding: resultsHolding
+    });
   } catch (error) {
     res.status(500).send(error.message);
   }
-  
 }
+
 // Get User By Id
 const getUserById = async (req, res) => {
   const { id } = req.params;
