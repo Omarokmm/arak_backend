@@ -131,10 +131,8 @@ const getCasesByMonth = async (req, res) => {
   }
 };
 
-
 const getAllCasesByDoctor = async (req, res) => {
   const { id } = req.params;
-  console.log("id", id);
 
   try {
     // Retrieve all cases from the database
@@ -173,7 +171,6 @@ const getCaseById = async (req, res) => {
 const getCaseSearch = async (req, res) => {
   try {
     const { search, searchField } = req.query;
-    console.log("search", search, "searchField", searchField);
 
     const query = {};
 
@@ -360,6 +357,7 @@ const updateProcessCase = async (req, res) => {
          [`${section}.namePhase`]: updateFields.namePhase, // Example of updating other attributes
          [`${section}.status`]: updateFields.status, // Example of updating other attributes
          [`${section}.obj`]: updateFields.obj, // Example of updating other attributes
+         [`isUrgent`]: updateFields.isUrgent, // Example of updating other attributes
          // Add other attributes as needed
        },
      },
@@ -380,7 +378,6 @@ const updateProcessCase = async (req, res) => {
 const updateIsHoldCase = async (req, res) => {
   const { id, isHold } = req.params;
   const buffHistoryHolding = req.body
-  console.log(buffHistoryHolding)
   try {
     // First, find the document to check if `historyHolding` exists
     const existingCase = await Case.findById(id);
@@ -405,7 +402,6 @@ const updateIsHoldCase = async (req, res) => {
         },
       { new: true }
     );
-    console.log('updatedCase',updatedCase)
     res.json(updatedCase);
   } catch (error) {
     console.error(error);
@@ -415,7 +411,6 @@ const updateIsHoldCase = async (req, res) => {
 const updateIsUrgentCase = async (req, res) => {
   const { id, isUrgent } = req.params;
   const buffHistoryUrgent = req.body
-  console.log(buffHistoryUrgent)
   try {
     // First, find the document to check if `historyHolding` exists
     const existingCase = await Case.findById(id);
@@ -440,7 +435,6 @@ const updateIsUrgentCase = async (req, res) => {
         },
       { new: true }
     );
-    console.log('updatedCase',updatedCase)
     res.json(updatedCase);
   } catch (error) {
     console.error(error);

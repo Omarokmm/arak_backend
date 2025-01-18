@@ -107,6 +107,184 @@ const getCasesByUser = async (req, res) => {
   }
 }
 
+// Get Cases In Dates
+
+const getCasesByUser1 = async (req, res) => {
+  const technicianId = req.params.id;
+  let { year, month } = req.query;
+
+  // Default to current year and month if not provided
+  const currentDate = new Date();
+  year = parseInt(year, 10) || currentDate.getFullYear();
+  month = parseInt(month, 10) || (currentDate.getMonth() + 1); // MongoDB months are 0-indexed
+
+  // Calculate the start and end date of the month
+  const startDate = new Date(year, month - 1, 1); // First day of the month
+  const endDate = new Date(year, month, 0); // Last day of the month
+  endDate.setHours(23, 59, 59, 999); // Ensure the last millisecond of the month is included
+
+  const caseIdsEnd = new Set();
+  const caseIdsProcessed = new Set();
+  const caseIdsProcessedPause = new Set();
+  const resultsEnd = [];
+  const resultsStart = [];
+  const resultsPause = [];
+  const resultsHolding = [];
+
+  let count = 0;
+  let count1 = 0;
+
+  try {
+    // MongoDB query to fetch cases that have actions within the specified date range
+    const cases = await Case.find({
+      $or: [
+        {
+          "cadCam.actions": {
+            $elemMatch: {
+              technicianId: technicianId,
+              dateStart: { $gte: startDate, $lte: endDate } // Filter by technician and dateStart for "started" actions
+            }
+          }
+        },
+        {
+          "fitting.actions": {
+            $elemMatch: {
+              technicianId: technicianId,
+              dateStart: { $gte: startDate, $lte: endDate }
+            }
+          }
+        },
+        {
+          "plaster.actions": {
+            $elemMatch: {
+              technicianId: technicianId,
+              dateStart: { $gte: startDate, $lte: endDate }
+            }
+          }
+        },
+        {
+          "ceramic.actions": {
+            $elemMatch: {
+              technicianId: technicianId,
+              dateStart: { $gte: startDate, $lte: endDate }
+            }
+          }
+        },
+        {
+          "designing.actions": {
+            $elemMatch: {
+              technicianId: technicianId,
+              dateStart: { $gte: startDate, $lte: endDate }
+            }
+          }
+        },
+        {
+          "qualityControl.actions": {
+            $elemMatch: {
+              technicianId: technicianId,
+              dateStart: { $gte: startDate, $lte: endDate }
+            }
+          }
+        },
+        {
+          "receptionPacking.actions": {
+            $elemMatch: {
+              technicianId: technicianId,
+              dateStart: { $gte: startDate, $lte: endDate }
+            }
+          }
+        },
+        {
+          "delivering.actions": {
+            $elemMatch: {
+              technicianId: technicianId,
+              dateStart: { $gte: startDate, $lte: endDate }
+            }
+          }
+        }
+      ]
+    });
+
+    console.log("Fetched Cases:", cases); // Debug: Check the fetched cases
+
+    cases.forEach((caseItem) => {
+      ['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking', 'delivering'].forEach((phase) => {
+        // Check if the actions array exists for each phase
+        if (caseItem[phase]?.actions) {
+          caseItem[phase].actions.forEach((action) => {
+            // Log the action to debug the fields
+            console.log(`Processing action: ${JSON.stringify(action)}`);
+
+            // For Ended cases (dateEnd)
+            if (action.dateEnd && action.technicianId === technicianId) {
+              const actionDateEnd = new Date(action.dateEnd);
+              if (actionDateEnd >= startDate && actionDateEnd <= endDate) {
+                if (!caseIdsEnd.has(caseItem._id.toString())) {
+                  caseIdsEnd.add(caseItem._id.toString());
+                  resultsEnd.push(caseItem);
+                }
+                count++; // For counting ended cases
+              }
+            }
+
+            // For Started cases (dateStart) - Handling both cases with dateStart only and with dateEnd
+            if (action.dateStart && action.technicianId === technicianId) {
+              const actionDateStart = new Date(action.dateStart);
+              if (actionDateStart >= startDate && actionDateStart <= endDate) {
+                if (!caseIdsProcessed.has(caseItem._id.toString())) {
+                  caseIdsProcessed.add(caseItem._id.toString());
+                  resultsStart.push(caseItem);
+                }
+                count1++; // For counting started cases
+              }
+            }
+
+            // For Paused cases (prfeix: 'pause')
+            if (action.prfeix === 'pause' && action.technicianId === technicianId) {
+              const actionDatePause = new Date(action.dateEnd);
+              if (actionDatePause >= startDate && actionDatePause <= endDate) {
+                if (!caseIdsProcessedPause.has(caseItem._id.toString())) {
+                  caseIdsProcessedPause.add(caseItem._id.toString());
+                  resultsPause.push(caseItem);
+                }
+                count1++; // For counting paused cases
+              }
+            }
+          });
+        }
+      });
+
+      // Process Holding cases (check if isHold and technicianId in historyHolding)
+      if (caseItem.isHold && caseItem.historyHolding?.length > 0) {
+        const lastHolding = caseItem.historyHolding[caseItem.historyHolding.length - 1];
+        if (lastHolding?.id === technicianId) {
+          resultsHolding.push(caseItem);
+        }
+      }
+    });
+
+    console.log('Results End:', resultsEnd); // Debug: Output ended cases
+    console.log('Results Start:', resultsStart); // Debug: Output started cases
+    console.log('Results Pause:', resultsPause); // Debug: Output paused cases
+    console.log('Results Holding:', resultsHolding); // Debug: Output holding cases
+
+    res.json({
+      casesEnd: resultsEnd,
+      casesStart: resultsStart,
+      casesPause: resultsPause,
+      casesHolding: resultsHolding
+    });
+  } catch (error) {
+    console.error('Error fetching cases:', error); // Log error
+    res.status(500).send(error.message);
+  }
+};
+
+
+
+
+
+
 
 // Get User By Id
 const getUserById = async (req, res) => {
