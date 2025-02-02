@@ -36,7 +36,7 @@ const getAllCases = async (req, res) => {
 //     res.status(responsesStatus.OK).json({
 //       cases:cases,
 //       count:cases.length
-    
+
 //     });
 //   } catch (error) {
 //     console.error(error);
@@ -49,7 +49,7 @@ const getCasesByMonth = async (req, res) => {
   // Default to current date if no year and month are provided
   const currentDate = new Date();
   year = year || currentDate.getFullYear();
-  month = month || (currentDate.getMonth() + 1); // getMonth() returns 0-11, so add 1 to match the typical month numbering
+  month = month || currentDate.getMonth() + 1; // getMonth() returns 0-11, so add 1 to match the typical month numbering
 
   // If startDate and endDate are provided, use them as the date range
   if (startDate && endDate) {
@@ -70,61 +70,71 @@ const getCasesByMonth = async (req, res) => {
 
       // Fetch cases between the custom date range
       const cases = await Case.find({
-        createdAt: { $gte: parsedStartDate, $lt: parsedEndDate }
+        createdAt: { $gte: parsedStartDate, $lt: parsedEndDate },
       }).sort({ createdAt: -1 });
       // Holding Cases In All Cases
       const holdingCases = await Case.find({
         isHold: true, // Only fetch cases where isHold is true
-        createdAt: { $lt: parsedEndDate } // Optionally filter by createdAt
+        createdAt: { $lt: parsedEndDate }, // Optionally filter by createdAt
       }).sort({ createdAt: -1 });
       // Urgent Cases In All Cases
       const urgentCases = await Case.find({
         isUrgent: true, // Only fetch cases where isHold is true
-        createdAt: { $lt: parsedEndDate } // Optionally filter by createdAt
+        createdAt: { $lt: parsedEndDate }, // Optionally filter by createdAt
       }).sort({ createdAt: -1 });
+          // Study Cases In All Cases
+    const studyCases = await Case.find({
+      isStudy: true, // Only fetch cases where isHold is true
+    }).sort({ createdAt: -1 });
       return res.status(responsesStatus.OK).json({
         cases,
-        holdingCases:holdingCases,
-        urgentCases:urgentCases,
-        count: cases.length
+        holdingCases: holdingCases,
+        urgentCases: urgentCases,
+        studyCases: studyCases,
+        count: cases.length,
       });
-
     } catch (error) {
       console.error("Invalid date format:", error);
-      return res.status(responsesStatus.BadRequest).json({ error: "Invalid date format" });
+      return res
+        .status(responsesStatus.BadRequest)
+        .json({ error: "Invalid date format" });
     }
   }
 
   // Default behavior: Get cases for a specific month and year
   try {
     // Create start date for the 1st day of the month at 00:00:00
-    const startOfMonth = new Date(year, month - 1, 1); // month is 0-indexed, so subtract 1
+    const startOfMonth = new Date(year, month - 3, 1); // month is 0-indexed, so subtract 1
     startOfMonth.setHours(0, 0, 0, 0); // Start of the day
 
     // Create end date for the last day of the month at 23:59:59.999
-    const endOfMonth = new Date(year, month + 1, 0); // Get last day of the month
+    const endOfMonth = new Date(year, month + 3, 0); // Get last day of the month
     endOfMonth.setHours(23, 59, 59, 999); // End of the day
 
     // Retrieve cases created within the specified month range
     const cases = await Case.find({
-      createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+      createdAt: { $gte: startOfMonth, $lt: endOfMonth },
     }).sort({ createdAt: -1 });
 
     const holdingCases = await Case.find({
       isHold: true, // Only fetch cases where isHold is true
     }).sort({ createdAt: -1 });
-       // Urgent Cases In All Cases
-       const urgentCases = await Case.find({
-        isUrgent: true, // Only fetch cases where isHold is true
-      }).sort({ createdAt: -1 });
+    // Urgent Cases In All Cases
+    const urgentCases = await Case.find({
+      isUrgent: true, // Only fetch cases where isHold is true
+    }).sort({ createdAt: -1 });
+    // Study Cases In All Cases
+    const studyCases = await Case.find({
+      isStudy: true, // Only fetch cases where isHold is true
+    }).sort({ createdAt: -1 });
     // Respond with the filtered cases
     return res.status(responsesStatus.OK).json({
       cases,
-      holdingCases:holdingCases,
-      urgentCases:urgentCases,
-      count: cases.length
+      holdingCases: holdingCases,
+      urgentCases: urgentCases,
+      studyCases: studyCases,
+      count: cases.length,
     });
-
   } catch (error) {
     console.error(error);
     res.status(responsesStatus.NotFound).json({ error: "Not Found" });
@@ -136,13 +146,13 @@ const getAllCasesByDoctor = async (req, res) => {
 
   try {
     // Retrieve all cases from the database
-    const cases = await Case.find({});
+    const cases = await Case.find({ "dentistObj.id": id });
 
     // Filter cases to find those associated with the specified doctor (dentist)
-    const casesFilter = cases.filter(caseItem => caseItem.dentistObj.id == id);
+    // const casesFilter = cases.filter(caseItem => caseItem.dentistObj.id == id);
 
     // Respond with the filtered cases
-    res.status(responsesStatus.OK).json(casesFilter);
+    res.status(responsesStatus.OK).json(cases);
   } catch (error) {
     // Handle errors, e.g., database errors
     console.error(error);
@@ -179,26 +189,28 @@ const getCaseSearch = async (req, res) => {
       // If searchField is valid, construct the query accordingly
       if (search) {
         if (searchField === SEARCH_FIELDS.CASE_NUMBER) {
-          query.caseNumber = new RegExp(search, 'i');
+          query.caseNumber = new RegExp(search, "i");
         } else if (searchField === SEARCH_FIELDS.DOCTOR) {
-          query['dentistObj.name'] = new RegExp(search, 'i');
+          query["dentistObj.name"] = new RegExp(search, "i");
         } else if (searchField === SEARCH_FIELDS.PATIENT) {
-          query.patientName = new RegExp(search, 'i');
+          query.patientName = new RegExp(search, "i");
         }
       }
     } else if (search) {
       // If no specific searchField is provided, search across all fields (fallback)
       query.$or = [
-        { caseNumber: new RegExp(search, 'i') },
-        { 'dentistObj.name': new RegExp(search, 'i') },
-        { patientName: new RegExp(search, 'i') },
+        { caseNumber: new RegExp(search, "i") },
+        { "dentistObj.name": new RegExp(search, "i") },
+        { patientName: new RegExp(search, "i") },
       ];
     }
 
     const cases = await Case.find(query).sort({ createdAt: -1 });
     res.json(cases);
   } catch (error) {
-    res.status(500).json({ error: 'An error occurred while searching for cases' });
+    res
+      .status(500)
+      .json({ error: "An error occurred while searching for cases" });
   }
 };
 
@@ -228,6 +240,7 @@ const createCase = async (req, res) => {
     isPhoto,
     isHold,
     isUrgent,
+    isStudy,
     photos,
     deadline,
     dateReceived,
@@ -245,7 +258,7 @@ const createCase = async (req, res) => {
   } = req.body;
   // add case to db
   try {
-    const countCase = await CounterCase.findOne({}).sort({ _id: -1 }); 
+    const countCase = await CounterCase.findOne({}).sort({ _id: -1 });
     const caseNumber = countCase ? Number(countCase.caseNumber) + 1 : 1;
     const newCase = await Case.create({
       caseNumber,
@@ -260,6 +273,7 @@ const createCase = async (req, res) => {
       translucency,
       isHold,
       isUrgent,
+      isStudy,
       gender,
       age,
       patientPhone,
@@ -288,7 +302,7 @@ const createCase = async (req, res) => {
       logs,
     });
     const newCaseNumber = await CounterCase.findByIdAndUpdate(
-      countCase._id ,
+      countCase._id,
       { caseNumber: caseNumber },
       { new: true }
     );
@@ -343,45 +357,46 @@ const updateCase = async (req, res) => {
 const updateProcessCase = async (req, res) => {
   const { id, section } = req.params;
   const updateFields = req.body;
-    // const updatedActions = [
-    //   ...caseData[section].actions,
-    //   ...updateFields.actions,
-    // ];
+  // const updatedActions = [
+  //   ...caseData[section].actions,
+  //   ...updateFields.actions,
+  // ];
 
- try {
-   const updatedCase = await Case.findByIdAndUpdate(
-     id,
-     {
-       $set: {
-         [`${section}.actions`]: updateFields.actions,
-         [`${section}.namePhase`]: updateFields.namePhase, // Example of updating other attributes
-         [`${section}.status`]: updateFields.status, // Example of updating other attributes
-         [`${section}.obj`]: updateFields.obj, // Example of updating other attributes
-         [`isUrgent`]: updateFields.isUrgent, // Example of updating other attributes
-         // Add other attributes as needed
-       },
-     },
-     { new: true }
-   );
+  try {
+    const updatedCase = await Case.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          [`${section}.actions`]: updateFields.actions,
+          [`${section}.namePhase`]: updateFields.namePhase, // Example of updating other attributes
+          [`${section}.status`]: updateFields.status, // Example of updating other attributes
+          [`${section}.obj`]: updateFields.obj, // Example of updating other attributes
+          [`isUrgent`]: updateFields.isUrgent, // Example of updating other attributes
+          [`isStudy`]: updateFields.isStudy, // Example of updating other attributes
+          // Add other attributes as needed
+        },
+      },
+      { new: true }
+    );
 
-   if (!updatedCase) {
-     res.status(404).json({ message: "Case not found" });
-     return;
-   }
+    if (!updatedCase) {
+      res.status(404).json({ message: "Case not found" });
+      return;
+    }
 
-   res.json(updatedCase);
- } catch (error) {
-   console.error(error);
-   res.status(500).json({ message: "Server Error" });
- }
+    res.json(updatedCase);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };
 const updateIsHoldCase = async (req, res) => {
   const { id, isHold } = req.params;
-  const buffHistoryHolding = req.body
+  const buffHistoryHolding = req.body;
   try {
     // First, find the document to check if `historyHolding` exists
     const existingCase = await Case.findById(id);
-    
+
     if (!existingCase) {
       res.status(404).json({ message: "Case not found" });
       return;
@@ -390,16 +405,16 @@ const updateIsHoldCase = async (req, res) => {
     const updatedCase = await Case.findByIdAndUpdate(
       id,
       existingCase.historyHolding
-      ? {
-        $set: {
-          ["isHold"]: isHold,
-          ["historyHolding"]: req.body,
-        }
-        }
-      : {
-        $set: {["isHold"]: isHold,},
-        $push: { historyHolding: { $each: buffHistoryHolding } }  // Append new items to existing array
-        },
+        ? {
+            $set: {
+              ["isHold"]: isHold,
+              ["historyHolding"]: req.body,
+            },
+          }
+        : {
+            $set: { ["isHold"]: isHold },
+            $push: { historyHolding: { $each: buffHistoryHolding } }, // Append new items to existing array
+          },
       { new: true }
     );
     res.json(updatedCase);
@@ -410,11 +425,11 @@ const updateIsHoldCase = async (req, res) => {
 };
 const updateIsUrgentCase = async (req, res) => {
   const { id, isUrgent } = req.params;
-  const buffHistoryUrgent = req.body
+  const buffHistoryUrgent = req.body;
   try {
     // First, find the document to check if `historyHolding` exists
     const existingCase = await Case.findById(id);
-    
+
     if (!existingCase) {
       res.status(404).json({ message: "Case not found" });
       return;
@@ -423,16 +438,16 @@ const updateIsUrgentCase = async (req, res) => {
     const updatedCase = await Case.findByIdAndUpdate(
       id,
       existingCase.historyUrgent
-      ? {
-        $set: {
-          ["isUrgent"]: isUrgent,
-          ["historyUrgent"]: req.body,
-        }
-        }
-      : {
-        $set: {["isUrgent"]: isUrgent,},
-        $push: { historyUrgent: { $each: buffHistoryUrgent } }  // Append new items to existing array
-        },
+        ? {
+            $set: {
+              ["isUrgent"]: isUrgent,
+              ["historyUrgent"]: req.body,
+            },
+          }
+        : {
+            $set: { ["isUrgent"]: isUrgent },
+            $push: { historyUrgent: { $each: buffHistoryUrgent } }, // Append new items to existing array
+          },
       { new: true }
     );
     res.json(updatedCase);
@@ -452,5 +467,5 @@ module.exports = {
   updateIsHoldCase,
   getCasesByMonth,
   getCaseSearch,
-  updateIsUrgentCase
+  updateIsUrgentCase,
 };

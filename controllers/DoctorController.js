@@ -1,4 +1,5 @@
 const Doctor = require("../models/DoctorModel");
+const Case = require("../models/CaseModel");
 const responsesStatus = require("../enum/responsesStatus");
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
@@ -31,7 +32,33 @@ const getDoctorById = async (req, res) => {
     res.status(responsesStatus.BadRequest).json({ error: error.message });
   }
 };
+// Get Patients of doctor By Id
+const getPatientsOFDoctor = async (req, res) => {
+  const { id } = req.params;
 
+  try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(responsesStatus.NotFound).json({ error: "Invalid ID" });
+    }
+
+    // Find all cases where dentistObj.id matches the given id
+    const cases = await Case.find({ "dentistObj.id": id });
+
+    if (!cases.length) {
+      return res.status(responsesStatus.NotFound).json({ error: "No patients found for this doctor!" });
+    }
+
+    // Extract patient names
+    const patientNames = cases.map(caseObj => ({
+      name: caseObj.patientName,
+      dateIn: caseObj.dateIn
+    }));
+
+    res.status(responsesStatus.OK).json({ patients: patientNames });
+  } catch (error) {
+    res.status(responsesStatus.BadRequest).json({ error: error.message });
+  }
+};
 // Create new doctor
 const createDoctor = async (req, res) => {
   const {
@@ -106,7 +133,6 @@ const createDoctor = async (req, res) => {
 // Delete doctor
 const deleteDoctor = async (req, res) => {
   const { id } = req.params;
-
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(responsesStatus.NotFound).json({ error: "Invalid ID" });
@@ -147,4 +173,5 @@ module.exports = {
   getDoctorById,
   deleteDoctor,
   updateDoctor,
+  getPatientsOFDoctor
 };

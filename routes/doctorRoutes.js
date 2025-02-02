@@ -6,6 +6,7 @@ const {
   createDoctor,
   deleteDoctor,
   updateDoctor,
+  getPatientsOFDoctor,
 } = require("../controllers/DoctorController");
 const { getAllCasesByDoctor } = require("../controllers/CaseController");
 
@@ -17,6 +18,7 @@ router.get("/casesbydoctor/:id", getAllCasesByDoctor);
 
 // Get Single Doctor
 router.get("/:id", getDoctorById);
+router.get("/patients/:id", getPatientsOFDoctor);
 
 // Create a new Doctor
 router.post("/", createDoctor);

@@ -85,6 +85,10 @@ const CaseSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    isStudy: {
+      type: Boolean,
+      default: false,
+    },
     isEmail: {
       type: Boolean,
       default: true,
