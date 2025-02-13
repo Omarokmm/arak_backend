@@ -32,7 +32,15 @@ const getCasesByUser = async (req, res) => {
   let count = 0;
   let count1 = 0;
   try {
-    const cases = await Case.find();
+    // Get the current date and subtract 3 months
+const threeMonthsAgo = moment().subtract(3, 'months').toDate();
+
+// Query to get cases from the last 3 months
+const cases = await Case.find({
+  createdAt: { $gte: threeMonthsAgo }
+});
+
+    // const cases = await Case.find();
     // Cases Ended
     cases.forEach(caseItem => {
       ['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking','delivering'].forEach(phase => {
