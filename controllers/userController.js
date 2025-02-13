@@ -33,12 +33,11 @@ const getCasesByUser = async (req, res) => {
   let count1 = 0;
   try {
     // Get the current date and subtract 3 months
-const threeMonthsAgo = moment().subtract(3, 'months').toDate();
+// const threeMonthsAgo = moment().subtract(3, 'months').toDate();
 
-// Query to get cases from the last 3 months
-const cases = await Case.find({
-  createdAt: { $gte: threeMonthsAgo }
-});
+const cases = await Case.find()
+  .sort({ createdAt: -1 })  // Sort by createdAt in descending order
+  .limit(1200);  // Limit to the last 1200 records
 
     // const cases = await Case.find();
     // Cases Ended
