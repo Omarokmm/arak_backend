@@ -3,13 +3,13 @@ const Case = require("../models/CaseModel");
 const Department = require("../models/DepartmentModel");
 const responsesStatus = require("../enum/responsesStatus");
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt"); 
-const jwt = require("jsonwebtoken"); 
-const {validationResult} = require("express-validator");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const { validationResult } = require("express-validator");
 
 // Get All User
 const getUsers = async (req, res) => {
-  const users = await  User.find().populate('departments', '_id name');
+  const users = await User.find().populate("departments", "_id name");
   try {
     res.status(responsesStatus.OK).json(users);
   } catch (error) {
@@ -17,10 +17,9 @@ const getUsers = async (req, res) => {
   }
 };
 
-
-// Get Cases by Users 
-// Get Cases by Users 
-const getCasesByUser = async (req, res) => {
+// Get Cases by Users
+// Get Cases by Users
+const getCasesByUser2 = async (req, res) => {
   const technicianId = req.params.id;
   const caseIdsEnd = new Set(); // Set to track unique case IDs
   const caseIdsProcessed = new Set(); // Set to track unique case IDs
@@ -35,9 +34,8 @@ const getCasesByUser = async (req, res) => {
     // Get the current date and subtract 3 months
 // const threeMonthsAgo = moment().subtract(3, 'months').toDate();
 
-const cases = await Case.find()
-  .sort({ createdAt: -1 })  // Sort by createdAt in descending order
-  .limit(1200);  // Limit to the last 1200 records
+const cases = await Case.find() .limit(1500) // Adjust limit based on your needs
+      .sort({ createdAt: -1 }); // Sort by newest cases first
 
 
     // const cases = await Case.find();
@@ -114,184 +112,251 @@ const cases = await Case.find()
   } catch (error) {
     res.status(500).send(error.message);
   }
-}
+};
 
-// Get Cases In Dates
 
-const getCasesByUser1 = async (req, res) => {
-  const technicianId = req.params.id;
-  let { year, month } = req.query;
-
-  // Default to current year and month if not provided
-  const currentDate = new Date();
-  year = parseInt(year, 10) || currentDate.getFullYear();
-  month = parseInt(month, 10) || (currentDate.getMonth() + 1); // MongoDB months are 0-indexed
-
-  // Calculate the start and end date of the month
-  const startDate = new Date(year, month - 1, 1); // First day of the month
-  const endDate = new Date(year, month, 0); // Last day of the month
-  endDate.setHours(23, 59, 59, 999); // Ensure the last millisecond of the month is included
-
-  const caseIdsEnd = new Set();
-  const caseIdsProcessed = new Set();
-  const caseIdsProcessedPause = new Set();
-  const resultsEnd = [];
-  const resultsStart = [];
-  const resultsPause = [];
-  const resultsHolding = [];
-
-  let count = 0;
-  let count1 = 0;
-
+const getCasesByUser = async (req, res) => {
   try {
-    // MongoDB query to fetch cases that have actions within the specified date range
-    const cases = await Case.find({
+    const technicianId = req.params.id;
+
+    // Find all cases that meet any of the conditions
+    const allCases = await Case.find({
       $or: [
+        // Cases that have ended
         {
+          "cadCam.status.isEnd": true,
           "cadCam.actions": {
-            $elemMatch: {
-              technicianId: technicianId,
-              dateStart: { $gte: startDate, $lte: endDate } // Filter by technician and dateStart for "started" actions
-            }
-          }
+            $elemMatch: { technicianId, dateEnd: { $exists: true } },
+          },
         },
         {
+          "fitting.status.isEnd": true,
           "fitting.actions": {
-            $elemMatch: {
-              technicianId: technicianId,
-              dateStart: { $gte: startDate, $lte: endDate }
-            }
-          }
+            $elemMatch: { technicianId, dateEnd: { $exists: true } },
+          },
         },
         {
+          "plaster.status.isEnd": true,
           "plaster.actions": {
-            $elemMatch: {
-              technicianId: technicianId,
-              dateStart: { $gte: startDate, $lte: endDate }
-            }
-          }
+            $elemMatch: { technicianId, dateEnd: { $exists: true } },
+          },
         },
         {
+          "ceramic.status.isEnd": true,
           "ceramic.actions": {
-            $elemMatch: {
-              technicianId: technicianId,
-              dateStart: { $gte: startDate, $lte: endDate }
-            }
-          }
+            $elemMatch: { technicianId, dateEnd: { $exists: true } },
+          },
         },
         {
+          "designing.status.isEnd": true,
           "designing.actions": {
-            $elemMatch: {
-              technicianId: technicianId,
-              dateStart: { $gte: startDate, $lte: endDate }
-            }
-          }
+            $elemMatch: { technicianId, dateEnd: { $exists: true } },
+          },
         },
         {
+          "qualityControl.status.isEnd": true,
           "qualityControl.actions": {
-            $elemMatch: {
-              technicianId: technicianId,
-              dateStart: { $gte: startDate, $lte: endDate }
-            }
-          }
+            $elemMatch: { technicianId, dateEnd: { $exists: true } },
+          },
         },
         {
+          "receptionPacking.status.isEnd": true,
           "receptionPacking.actions": {
-            $elemMatch: {
-              technicianId: technicianId,
-              dateStart: { $gte: startDate, $lte: endDate }
-            }
-          }
+            $elemMatch: { technicianId, dateEnd: { $exists: true } },
+          },
         },
         {
+          "delivering.status.isEnd": true,
           "delivering.actions": {
-            $elemMatch: {
-              technicianId: technicianId,
-              dateStart: { $gte: startDate, $lte: endDate }
-            }
-          }
-        }
-      ]
+            $elemMatch: { technicianId, dateEnd: { $exists: true } },
+          },
+        },
+
+        // Cases that have started
+        {
+          "cadCam.status.isStart": false,
+          "cadCam.actions": {
+            $elemMatch: { technicianId, dateStart: { $exists: true } },
+          },
+        },
+        {
+          "fitting.status.isStart": false,
+          "fitting.actions": {
+            $elemMatch: { technicianId, dateStart: { $exists: true } },
+          },
+        },
+        {
+          "plaster.status.isStart": false,
+          "plaster.actions": {
+            $elemMatch: { technicianId, dateStart: { $exists: true } },
+          },
+        },
+        {
+          "ceramic.status.isStart": false,
+          "ceramic.actions": {
+            $elemMatch: { technicianId, dateStart: { $exists: true } },
+          },
+        },
+        {
+          "designing.status.isStart": false,
+          "designing.actions": {
+            $elemMatch: { technicianId, dateStart: { $exists: true } },
+          },
+        },
+        {
+          "qualityControl.status.isStart": false,
+          "qualityControl.actions": {
+            $elemMatch: { technicianId, dateStart: { $exists: true } },
+          },
+        },
+        {
+          "receptionPacking.status.isStart": false,
+          "receptionPacking.actions": {
+            $elemMatch: { technicianId, dateStart: { $exists: true } },
+          },
+        },
+        {
+          "delivering.status.isStart": false,
+          "delivering.actions": {
+            $elemMatch: { technicianId, dateStart: { $exists: true } },
+          },
+        },
+
+              // Cases that have Paused
+              {
+                "cadCam.status.isPause": false,
+                "cadCam.actions": {
+                  $elemMatch: { technicianId, datePause: { $exists: true } },
+                },
+              },
+              {
+                "fitting.status.isPause": false,
+                "fitting.actions": {
+                  $elemMatch: { technicianId, datePause: { $exists: true } },
+                },
+              },
+              {
+                "plaster.status.isPause": false,
+                "plaster.actions": {
+                  $elemMatch: { technicianId, datePause: { $exists: true } },
+                },
+              },
+              {
+                "ceramic.status.isPause": false,
+                "ceramic.actions": {
+                  $elemMatch: { technicianId, datePause: { $exists: true } },
+                },
+              },
+              {
+                "designing.status.isPause": false,
+                "designing.actions": {
+                  $elemMatch: { technicianId, datePause: { $exists: true } },
+                },
+              },
+              {
+                "qualityControl.status.isPause": false,
+                "qualityControl.actions": {
+                  $elemMatch: { technicianId, datePause: { $exists: true } },
+                },
+              },
+              {
+                "receptionPacking.status.isPause": false,
+                "receptionPacking.actions": {
+                  $elemMatch: { technicianId, datePause: { $exists: true } },
+                },
+              },
+              {
+                "delivering.status.isPause": false,
+                "delivering.actions": {
+                  $elemMatch: { technicianId, datePause: { $exists: true } },
+                },
+              },
+
+        // Cases that are on hold
+        { isHold: true, "historyHolding.id": technicianId },
+      ],
     });
 
-    console.log("Fetched Cases:", cases); // Debug: Check the fetched cases
+    // Now, let's categorize the cases
+    const resultsEnd = [];
+    const resultsStart = [];
+    const resultsPause = [];
+    const resultsHolding = [];
 
-    cases.forEach((caseItem) => {
-      ['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking', 'delivering'].forEach((phase) => {
-        // Check if the actions array exists for each phase
-        if (caseItem[phase]?.actions) {
-          caseItem[phase].actions.forEach((action) => {
-            // Log the action to debug the fields
-            console.log(`Processing action: ${JSON.stringify(action)}`);
-
-            // For Ended cases (dateEnd)
-            if (action.dateEnd && action.technicianId === technicianId) {
-              const actionDateEnd = new Date(action.dateEnd);
-              if (actionDateEnd >= startDate && actionDateEnd <= endDate) {
-                if (!caseIdsEnd.has(caseItem._id.toString())) {
-                  caseIdsEnd.add(caseItem._id.toString());
-                  resultsEnd.push(caseItem);
-                }
-                count++; // For counting ended cases
-              }
-            }
-
-            // For Started cases (dateStart) - Handling both cases with dateStart only and with dateEnd
-            if (action.dateStart && action.technicianId === technicianId) {
-              const actionDateStart = new Date(action.dateStart);
-              if (actionDateStart >= startDate && actionDateStart <= endDate) {
-                if (!caseIdsProcessed.has(caseItem._id.toString())) {
-                  caseIdsProcessed.add(caseItem._id.toString());
-                  resultsStart.push(caseItem);
-                }
-                count1++; // For counting started cases
-              }
-            }
-
-            // For Paused cases (prfeix: 'pause')
-            if (action.prfeix === 'pause' && action.technicianId === technicianId) {
-              const actionDatePause = new Date(action.dateEnd);
-              if (actionDatePause >= startDate && actionDatePause <= endDate) {
-                if (!caseIdsProcessedPause.has(caseItem._id.toString())) {
-                  caseIdsProcessedPause.add(caseItem._id.toString());
-                  resultsPause.push(caseItem);
-                }
-                count1++; // For counting paused cases
-              }
-            }
-          });
+    allCases.forEach((caseItem) => {
+      [
+        "cadCam",
+        "fitting",
+        "plaster",
+        "ceramic",
+        "designing",
+        "qualityControl",
+        "receptionPacking",
+        "delivering",
+      ].forEach((phase) => {
+        // Check for 'Ended' phase
+        const lastActionEnd =
+          caseItem[phase]?.actions?.[caseItem[phase].actions.length - 1];
+        if (
+          caseItem[phase]?.status?.isEnd &&
+          lastActionEnd?.technicianId === technicianId &&
+          lastActionEnd?.dateEnd
+        ) {
+          if (!resultsEnd.includes(caseItem)) resultsEnd.push(caseItem);
         }
+
+        const lastActionStart =
+          caseItem[phase]?.actions?.[caseItem[phase].actions.length - 1];
+        if (lastActionStart?.technicianId === technicianId) {
+          if (
+            !caseItem[phase]?.status?.isStart &&
+            lastActionStart?.prfeix === "start"
+          ) {
+            if (!resultsStart.includes(caseItem)) resultsStart.push(caseItem);
+          }
+        }
+
+        // // Check for 'Started' phase
+        // const lastActionStart = caseItem[phase]?.actions?.[caseItem[phase].actions.length - 1];
+        // if (lastActionStart?.prefix === "start" && lastActionStart.technicianId === technicianId) {
+        //   if (!resultsStart.includes(caseItem)) resultsStart.push(caseItem);
+        // }
+
+        // Check for 'Paused' phase
+        const lastActionPause =
+          caseItem[phase]?.actions?.[caseItem[phase].actions.length - 1];
+        if (lastActionPause?.technicianId === technicianId) {
+          if (
+            !caseItem[phase]?.status?.isPause &&
+            lastActionPause?.prfeix === "pause"
+          ) {
+            if (!resultsPause.includes(caseItem)) resultsPause.push(caseItem);
+          }
+        }
+
       });
 
-      // Process Holding cases (check if isHold and technicianId in historyHolding)
-      if (caseItem.isHold && caseItem.historyHolding?.length > 0) {
-        const lastHolding = caseItem.historyHolding[caseItem.historyHolding.length - 1];
-        if (lastHolding?.id === technicianId) {
-          resultsHolding.push(caseItem);
-        }
+      // Check for 'Holding' status
+      if (
+        caseItem.isHold &&
+        caseItem.historyHolding?.[caseItem.historyHolding.length - 1]?.id ===
+          technicianId
+      ) {
+        if (!resultsHolding.includes(caseItem)) resultsHolding.push(caseItem);
       }
     });
 
-    console.log('Results End:', resultsEnd); // Debug: Output ended cases
-    console.log('Results Start:', resultsStart); // Debug: Output started cases
-    console.log('Results Pause:', resultsPause); // Debug: Output paused cases
-    console.log('Results Holding:', resultsHolding); // Debug: Output holding cases
-
+    // Return the categorized cases
     res.json({
       casesEnd: resultsEnd,
       casesStart: resultsStart,
       casesPause: resultsPause,
-      casesHolding: resultsHolding
+      casesHolding: resultsHolding,
     });
   } catch (error) {
-    console.error('Error fetching cases:', error); // Log error
     res.status(500).send(error.message);
   }
 };
-
-
-
-
 
 
 
@@ -311,17 +376,15 @@ const getUserById = async (req, res) => {
     res.status(responsesStatus.BadRequest).json({ error: error.message });
   }
 };
-// Login User 
-const generateAccessToken =async (user)=>{
-  const token = await jwt.sign(user, process.env.ACCESS_SECRET_TOKEN,{expiresIn:"2h"}); 
-  return token
-}
+// Login User
+const generateAccessToken = async (user) => {
+  const token = await jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, {
+    expiresIn: "2h",
+  });
+  return token;
+};
 const loginUser = async (req, res) => {
-  const {
-    email,
-    password,
-   
-  } = req.body;
+  const { email, password } = req.body;
   // add User to db
   try {
     const errors = validationResult(req);
@@ -340,33 +403,33 @@ const loginUser = async (req, res) => {
       });
     }
     const isPasswordMatch = await bcrypt.compare(password, userData.password);
-     if (!isPasswordMatch) {
-       return res.status(responsesStatus.BadRequest).json({
-         success: false,
-         msg: "Email & Password is incorrect",
-       });
-     }
+    if (!isPasswordMatch) {
+      return res.status(responsesStatus.BadRequest).json({
+        success: false,
+        msg: "Email & Password is incorrect",
+      });
+    }
     const departmentIds = userData.departments;
     const departments = await Department.find({ _id: { $in: departmentIds } });
     //    const userWithDepartments = {
     //   ...userData,
     //   departments: departments.map(dept => dept.name),
     // };
-    const accessToken = generateAccessToken({user:userData})
-       return res.status(responsesStatus.OK).json({
-         success: true,
-         msg: "Login Successfully",
-         accessToken: accessToken,
-         tokenType: "Bearer",
-         data:userData,
-         departments :departments.map(dept => {
-          return {
-           name: dept.name,
-           id: dept._id,
-          }
-         })
-       });
-  } catch (error) { 
+    const accessToken = generateAccessToken({ user: userData });
+    return res.status(responsesStatus.OK).json({
+      success: true,
+      msg: "Login Successfully",
+      accessToken: accessToken,
+      tokenType: "Bearer",
+      data: userData,
+      departments: departments.map((dept) => {
+        return {
+          name: dept.name,
+          id: dept._id,
+        };
+      }),
+    });
+  } catch (error) {
     return res
       .status(responsesStatus.BadRequest)
       .json({ error: error.message });
@@ -375,7 +438,6 @@ const loginUser = async (req, res) => {
 
 // Create new User
 const createUser = async (req, res) => {
-
   const {
     firstName,
     lastName,
@@ -395,31 +457,31 @@ const createUser = async (req, res) => {
   } = req.body;
   // add User to db
   try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(responsesStatus.BadRequest).json({
-          success: false,
-          msg: "Error",
-          errors: errors.array(),
-        });
-      }
-      const isExistUser = await User.findOne({email}) 
-      if(isExistUser){
-         return res.status(responsesStatus.BadRequest).json({
-           success: false,
-           msg: "Email is Exist",
-         });
-      }
-      const hashedPAssword = await bcrypt.hash(password,10);
-      const hashedConfirmPassword = await bcrypt.hash(confirmPassword, 10);
-      const workout = await User.create({
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(responsesStatus.BadRequest).json({
+        success: false,
+        msg: "Error",
+        errors: errors.array(),
+      });
+    }
+    const isExistUser = await User.findOne({ email });
+    if (isExistUser) {
+      return res.status(responsesStatus.BadRequest).json({
+        success: false,
+        msg: "Email is Exist",
+      });
+    }
+    const hashedPAssword = await bcrypt.hash(password, 10);
+    const hashedConfirmPassword = await bcrypt.hash(confirmPassword, 10);
+    const workout = await User.create({
       firstName,
       lastName,
       email,
       phone,
       address: {
         street,
-        city : city ? city : "city",
+        city: city ? city : "city",
         state,
         zipCode,
         country,
@@ -476,10 +538,7 @@ const updateUser = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(responsesStatus.NotFound).json({ error: "Invalid ID" });
     }
-    const user = await User.findByIdAndUpdate(
-      { _id: id },
-      { ...req.body }
-    );
+    const user = await User.findByIdAndUpdate({ _id: id }, { ...req.body });
     if (!user) {
       return res
         .status(responsesStatus.BadRequest)
@@ -501,7 +560,7 @@ const changePassword = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(responsesStatus.BadRequest).json({
         success: false,
-        msg: 'Error',
+        msg: "Error",
         errors: errors.array(),
       });
     }
@@ -511,7 +570,7 @@ const changePassword = async (req, res) => {
     if (!user) {
       return res.status(responsesStatus.BadRequest).json({
         success: false,
-        msg: 'User not found',
+        msg: "User not found",
       });
     }
 
@@ -525,10 +584,12 @@ const changePassword = async (req, res) => {
 
     res.status(responsesStatus.OK).json({
       success: true,
-      msg: 'Password updated successfully',
+      msg: "Password updated successfully",
     });
   } catch (error) {
-    return res.status(responsesStatus.BadRequest).json({ error: error.message });
+    return res
+      .status(responsesStatus.BadRequest)
+      .json({ error: error.message });
   }
 };
 module.exports = {
