@@ -104,11 +104,11 @@ const getCasesByMonth = async (req, res) => {
   // Default behavior: Get cases for a specific month and year
   try {
     // Create start date for the 1st day of the month at 00:00:00
-    const startOfMonth = new Date(year, month - 3, 1); // month is 0-indexed, so subtract 1
+    const startOfMonth = new Date(year, month - 2, 1); // month is 0-indexed, so subtract 1
     startOfMonth.setHours(0, 0, 0, 0); // Start of the day
 
     // Create end date for the last day of the month at 23:59:59.999
-    const endOfMonth = new Date(year, month + 3, 0); // Get last day of the month
+    const endOfMonth = new Date(year, month + 2, 0); // Get last day of the month
     endOfMonth.setHours(23, 59, 59, 999); // End of the day
 
     // Retrieve cases created within the specified month range
