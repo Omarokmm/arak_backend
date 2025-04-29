@@ -64,8 +64,8 @@ const getCasesByDepartment = async (req, res) => {
   const resultsStart = [];
   const resultsPause = [];
   const resultsHolding = [];
-  year = year || currentDate.getFullYear();
-  month = month || currentDate.getMonth() + 1; 
+  year =  currentDate.getFullYear();
+  month =  currentDate.getMonth() + 1; 
   try {
        // Create start date for the 1st day of the month at 00:00:00
         const startOfMonth = new Date(year, month - 3, 1); // month is 0-indexed, so subtract 1
