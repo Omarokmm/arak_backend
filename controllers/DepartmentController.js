@@ -56,6 +56,7 @@ const getAllUsersInDepartment = async (req, res) => {
 };
 // Get Cases by Department 
 const getCasesByDepartment = async (req, res) => {
+  const currentDate = new Date();
   const departmentName = req.params.departmentName; // Get department name from URL parameters
   const caseIdsEnd = new Set(); // Set to track unique case IDs
   const caseIdsProcessed = new Set(); // Set to track unique case IDs
@@ -76,7 +77,7 @@ const getCasesByDepartment = async (req, res) => {
         endOfMonth.setHours(23, 59, 59, 999); // End of the day
     
         // Retrieve cases created within the specified month range
-        const cases = await Case.find({
+        const cases = await CaseModel.find({
           createdAt: { $gte: startOfMonth, $lt: endOfMonth },
         }).sort({ createdAt: -1 });
     // const cases = await CaseModel.find();
