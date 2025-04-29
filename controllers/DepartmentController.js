@@ -64,8 +64,22 @@ const getCasesByDepartment = async (req, res) => {
   const resultsStart = [];
   const resultsPause = [];
   const resultsHolding = [];
+  year = year || currentDate.getFullYear();
+  month = month || currentDate.getMonth() + 1; 
   try {
-    const cases = await CaseModel.find();
+       // Create start date for the 1st day of the month at 00:00:00
+        const startOfMonth = new Date(year, month - 3, 1); // month is 0-indexed, so subtract 1
+        startOfMonth.setHours(0, 0, 0, 0); // Start of the day
+    
+        // Create end date for the last day of the month at 23:59:59.999
+        const endOfMonth = new Date(year, month + 3, 0); // Get last day of the month
+        endOfMonth.setHours(23, 59, 59, 999); // End of the day
+    
+        // Retrieve cases created within the specified month range
+        const cases = await Case.find({
+          createdAt: { $gte: startOfMonth, $lt: endOfMonth },
+        }).sort({ createdAt: -1 });
+    // const cases = await CaseModel.find();
 
     // Check if departmentName is valid
     if (!['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking','delivering'].includes(departmentName)) {
