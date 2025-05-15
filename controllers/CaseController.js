@@ -283,6 +283,74 @@ const getCasesByMonth = async (req, res) => {
 
 
 
+const getCasesByMonthForShipment = async (req, res) => {
+  let { year, month, startDate, endDate } = req.query; // Expecting year, month, startDate, and endDate as query parameters
+
+  // Default to current date if no year and month are provided
+  const currentDate = new Date();
+  year = year || currentDate.getFullYear();
+  month = month || currentDate.getMonth() + 1; // getMonth() returns 0-11, so add 1 to match the typical month numbering
+
+  // If startDate and endDate are provided, use them as the date range
+  if (startDate && endDate) {
+    try {
+      // Ensure the provided dates are in proper format (YYYY-MM-DD)
+      const parsedStartDate = new Date(startDate);
+      const parsedEndDate = new Date(endDate);
+
+      if (isNaN(parsedStartDate) || isNaN(parsedEndDate)) {
+        throw new Error("Invalid date format");
+      }
+
+      // Set start time to the beginning of the day (00:00:00)
+      parsedStartDate.setHours(0, 0, 0, 0);
+
+      // Set end time to just before midnight of the next day (23:59:59)
+      parsedEndDate.setHours(23, 59, 59, 999);
+
+      // Fetch cases between the custom date range
+      const cases = await Case.find({
+        createdAt: { $gte: parsedStartDate, $lt: parsedEndDate },
+      }).sort({ createdAt: -1 });
+    
+
+      // Respond with the filtered cases
+      return res.status(responsesStatus.OK).json({
+        cases,
+      });
+    } catch (error) {
+      console.error("Invalid date format:", error);
+      return res
+        .status(responsesStatus.BadRequest)
+        .json({ error: "Invalid date format" });
+    }
+  }
+  // Default behavior: Get cases for a specific month and year
+  try {
+    // Create start date for the 1st day of the month at 00:00:00
+    const startOfMonth = new Date(year, month - 3, 1); // month is 0-indexed, so subtract 1
+    startOfMonth.setHours(0, 0, 0, 0); // Start of the day
+
+    // Create end date for the last day of the month at 23:59:59.999
+    const endOfMonth = new Date(year, month + 3, 0); // Get last day of the month
+    endOfMonth.setHours(23, 59, 59, 999); // End of the day
+
+    // Retrieve cases created within the specified month range
+    const cases = await Case.find({
+      createdAt: { $gte: startOfMonth, $lt: endOfMonth },
+    }).sort({ createdAt: -1 });
+
+    // Respond with the filtered cases
+    return res.status(responsesStatus.OK).json({
+      cases
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(responsesStatus.NotFound).json({ error: "Not Found" });
+  }
+};
+
+
 const getAllCasesByDoctor = async (req, res) => {
   const { id } = req.params;
 
