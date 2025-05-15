@@ -722,5 +722,6 @@ module.exports = {
   getCaseSearch,
   updateIsUrgentCase,
   getCounter,
-  updateIsAprroveCase
+  updateIsAprroveCase,
+  getCasesByMonthForShipment
 };
