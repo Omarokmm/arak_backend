@@ -3,6 +3,13 @@ const User = require("../models/UserModel");
 const responsesStatus = require("../enum/responsesStatus");
 const mongoose = require("mongoose");
 const CaseModel = require("../models/CaseModel");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "oovnresx",
+  api_key: process.env.CLOUDINARY_API_KEY || "616629641948748",
+  api_secret: process.env.CLOUDINARY_API_SECRET || "ntVY29mm9RCsfGWFSnDB1VtrId4"
+});
 // Get All departments
 
 const getDepartments = async (req, res) => {
@@ -32,7 +39,7 @@ const getDepartmentById = async (req, res) => {
 };
 // get users in  Department
 const getAllUsersInDepartment = async (req, res) => {
-   const { id } = req.params;
+  const { id } = req.params;
   try {
     // Fetch all departments
     // Array to store users in departments
@@ -46,8 +53,8 @@ const getAllUsersInDepartment = async (req, res) => {
     //   // Push users to the array
     //   usersInDepartments.push({ department: department.name, users });
     // }
-       const users = await User.find({ departments: id });
-      
+    const users = await User.find({ departments: id });
+
     res.json(users);
   } catch (error) {
     console.error("Error fetching users in departments:", error);
@@ -65,25 +72,25 @@ const getCasesByDepartment = async (req, res) => {
   const resultsStart = [];
   const resultsPause = [];
   const resultsHolding = [];
-  year =  currentDate.getFullYear();
-  month =  currentDate.getMonth() + 1; 
+  year = currentDate.getFullYear();
+  month = currentDate.getMonth() + 1;
   try {
-       // Create start date for the 1st day of the month at 00:00:00
-        const startOfMonth = new Date(year, month - 4, 1); // month is 0-indexed, so subtract 1
-        startOfMonth.setHours(0, 0, 0, 0); // Start of the day
-    
-        // Create end date for the last day of the month at 23:59:59.999
-        const endOfMonth = new Date(year, month + 4, 0); // Get last day of the month
-        endOfMonth.setHours(23, 59, 59, 999); // End of the day
-    
-        // Retrieve cases created within the specified month range
-        const cases = await CaseModel.find({
-          createdAt: { $gte: startOfMonth, $lt: endOfMonth },
-        }).sort({ createdAt: -1 });
+    // Create start date for the 1st day of the month at 00:00:00
+    const startOfMonth = new Date(year, month - 4, 1); // month is 0-indexed, so subtract 1
+    startOfMonth.setHours(0, 0, 0, 0); // Start of the day
+
+    // Create end date for the last day of the month at 23:59:59.999
+    const endOfMonth = new Date(year, month + 4, 0); // Get last day of the month
+    endOfMonth.setHours(23, 59, 59, 999); // End of the day
+
+    // Retrieve cases created within the specified month range
+    const cases = await CaseModel.find({
+      createdAt: { $gte: startOfMonth, $lt: endOfMonth },
+    }).sort({ createdAt: -1 });
     // const cases = await CaseModel.find();
 
     // Check if departmentName is valid
-    if (!['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking','delivering'].includes(departmentName)) {
+    if (!['cadCam', 'fitting', 'plaster', 'ceramic', 'designing', 'qualityControl', 'receptionPacking', 'delivering'].includes(departmentName)) {
       return res.status(400).send('Invalid department name');
     }
     cases.forEach(caseItem => {
@@ -102,8 +109,7 @@ const getCasesByDepartment = async (req, res) => {
     cases.forEach(caseItem => {
       const phase = departmentName;
       const lastAction = caseItem[phase].actions[caseItem[phase].actions.length - 1];
-      if (lastAction?.prfeix === 'start' && !caseItem.isHold && !caseItem[phase].status.isStart)
-      {
+      if (lastAction?.prfeix === 'start' && !caseItem.isHold && !caseItem[phase].status.isStart) {
         if (!caseIdsProcessed.has(caseItem._id.toString())) {
           caseIdsProcessed.add(caseItem._id.toString());
           resultsStart.push(caseItem);
@@ -117,11 +123,11 @@ const getCasesByDepartment = async (req, res) => {
       const lastActionPause = caseItem[phase].actions[caseItem[phase].actions.length - 1];
       if (lastActionPause?.prfeix === 'pause' && !caseItem.isHold) {
         caseItem[phase].actions.forEach(action => {
-            // Check if this case ID has already been processed
-            if (!caseIdsProcessedPause.has(caseItem._id.toString())) {
-              caseIdsProcessedPause.add(caseItem._id.toString());
-              resultsPause.push(caseItem);
-            }
+          // Check if this case ID has already been processed
+          if (!caseIdsProcessedPause.has(caseItem._id.toString())) {
+            caseIdsProcessedPause.add(caseItem._id.toString());
+            resultsPause.push(caseItem);
+          }
         });
       }
     });
@@ -202,7 +208,7 @@ const deleteDepartment = async (req, res) => {
     // const department = await Department.findByIdAndDelete({ _id: id });
     // Step 1: Fetch users associated with the department
     const users = await User.find({ departments: id });
-    
+
 
 
     // Step 2: Update users to remove association with the department
@@ -216,7 +222,7 @@ const deleteDepartment = async (req, res) => {
           (depId) => depId.toString() !== id.toString()
         );
         user.departments = filteredDepartments;
-        console.log(user.departments,id);
+        console.log(user.departments, id);
         await user.save();
       })
     );
@@ -255,6 +261,74 @@ const updateDepartment = async (req, res) => {
   }
 };
 
+const uploadDeptFiles = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    const uploadPromises = req.files.map((file) => {
+      return new Promise((resolve, reject) => {
+        const resourceType = file.mimetype.startsWith("video/") ? "video" : "image";
+
+        const uploadOptions = {
+          resource_type: resourceType,
+          folder: "department_media"
+        };
+
+        if (resourceType === "video") {
+          uploadOptions.eager = [{ format: "mp4", transformation: { quality: "auto" } }];
+          uploadOptions.eager_async = true;
+        } else {
+          uploadOptions.quality = "auto";
+          uploadOptions.fetch_format = "auto";
+        }
+
+        const uploadStream = cloudinary.uploader.upload_stream(
+          uploadOptions,
+          (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve({
+                url: result.secure_url,
+                publicId: result.public_id,
+                resourceType: result.resource_type,
+                format: result.format,
+                size: result.bytes
+              });
+            }
+          }
+        );
+
+        uploadStream.end(file.buffer);
+      });
+    });
+
+    const results = await Promise.all(uploadPromises);
+    res.status(200).json({ urls: results });
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    res.status(500).json({ error: "Cloudinary upload failed", details: error.message });
+  }
+};
+
+const deleteDeptFile = async (req, res) => {
+  try {
+    const { publicId, resourceType } = req.body;
+    if (!publicId) {
+      return res.status(400).json({ error: "Missing publicId" });
+    }
+
+    const options = resourceType ? { resource_type: resourceType } : {};
+    await cloudinary.uploader.destroy(publicId, options);
+    res.status(200).json({ message: "File removed from Cloudinary successfully" });
+  } catch (error) {
+    console.error("Cloudinary deletion error:", error);
+    res.status(500).json({ error: "Cloudinary deletion failed", details: error.message });
+  }
+};
+
 module.exports = {
   createDepartment,
   getDepartments,
@@ -262,5 +336,7 @@ module.exports = {
   getAllUsersInDepartment,
   deleteDepartment,
   updateDepartment,
-  getCasesByDepartment
+  getCasesByDepartment,
+  uploadDeptFiles,
+  deleteDeptFile
 };

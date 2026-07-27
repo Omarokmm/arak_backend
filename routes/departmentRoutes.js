@@ -10,7 +10,13 @@ const {
   updateDepartment,
   getAllUsersInDepartment,
   getCasesByDepartment,
+  uploadDeptFiles,
+  deleteDeptFile,
 } = require("../controllers/DepartmentController");
+
+const multer = require("multer");
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // Get All Users
 router.get("/", getDepartments);
@@ -23,6 +29,12 @@ router.get("/casesInDepartment/:departmentName", getCasesByDepartment);
 
 // Get All Users in Departments
 router.get("/users-in-departments/:id", getAllUsersInDepartment);
+
+// File uploads
+router.post("/upload", upload.array("files"), uploadDeptFiles);
+
+// Delete file
+router.post("/deleteFile", deleteDeptFile);
 
 // Create a new User
 router.post("/", createDepartment);

@@ -29,6 +29,25 @@ const departmentSchema = new Schema(
       default: true,
     },
     sections: [{ type: Schema.Types.ObjectId, ref: "Section" }], // Array of section IDs
+    newsBar: {
+      type: String,
+      default: "",
+    },
+    newsList: [
+      {
+        text: { type: String, required: true },
+        active: { type: Boolean, default: true }
+      }
+    ],
+    media: [
+      {
+        url: { type: String, required: true },
+        publicId: { type: String, required: true },
+        resourceType: { type: String, required: true }, // "image" or "video"
+        format: { type: String },
+        size: { type: Number },
+      }
+    ],
   },
   { timestamps: true }
 );

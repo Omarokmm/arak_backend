@@ -1358,10 +1358,16 @@ const uploadFiles = async (req, res) => {
 
         const uploadOptions = {
           resource_type: resourceType,
-          folder: "case_attachments",
-          quality: "auto",
-          fetch_format: "auto"
+          folder: "case_attachments"
         };
+
+        if (resourceType === "video") {
+          uploadOptions.eager = [{ format: "mp4", transformation: { quality: "auto" } }];
+          uploadOptions.eager_async = true;
+        } else {
+          uploadOptions.quality = "auto";
+          uploadOptions.fetch_format = "auto";
+        }
 
         const uploadStream = cloudinary.uploader.upload_stream(
           uploadOptions,
