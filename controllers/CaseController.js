@@ -13,7 +13,6 @@ const mongoose = require("mongoose");
 const { validationResult } = require("express-validator");
 const SEARCH_FIELDS = require("../enum/searchFieldEnum");
 
-
 // Get All Cases
 // asdfasdf
 const getAllCases = async (req, res) => {
