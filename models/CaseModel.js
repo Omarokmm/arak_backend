@@ -255,6 +255,10 @@ const CaseSchema = new Schema(
       type: Array,
       default: [],
     },
+    completeHistory: {
+      type: Array,
+      default: [],
+    },
     assignmentHistory: {
       type: Array,
       default: [],

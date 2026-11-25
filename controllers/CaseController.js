@@ -640,7 +640,21 @@ const updateCase = async (req, res) => {
     if (updateData.photos) {
       updateData.isPhoto = updateData.photos.length > 0;
     }
-    const buffCase = await Case.findByIdAndUpdate({ _id: id }, updateData, { new: true });
+
+    const completeHistory = updateData.completeHistory;
+    delete updateData.completeHistory;
+
+    let updateDoc = updateData;
+    if (Array.isArray(completeHistory)) {
+      updateDoc.completeHistory = completeHistory;
+    } else if (completeHistory && typeof completeHistory === "object") {
+      updateDoc = {
+        $set: updateData,
+        $push: { completeHistory },
+      };
+    }
+
+    const buffCase = await Case.findByIdAndUpdate({ _id: id }, updateDoc, { new: true });
     if (!buffCase) {
       return res
         .status(responsesStatus.BadRequest)
@@ -908,7 +922,7 @@ const updateIsTopPriorityCase = async (req, res) => {
 
 const updateIsCompleteCase = async (req, res) => {
   const { id } = req.params;
-  const { isComplete } = req.body;
+  const { isComplete, completeHistory } = req.body;
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(responsesStatus.NotFound).json({ error: "Invalid ID" });
@@ -919,9 +933,27 @@ const updateIsCompleteCase = async (req, res) => {
         .json({ error: "isComplete must be a boolean" });
     }
 
+    const entry =
+    completeHistory && typeof completeHistory === "object"
+        ? completeHistory
+        : {
+            id: req.body.id,
+            name: req.body.name,
+            date: req.body.date,
+            isComplete,
+            msg: req.body.msg,
+          };
+
+    const update = { $set: { isComplete } };
+    if (Array.isArray(completeHistory)) {
+      update.$set.completeHistory = completeHistory;
+    } else if (entry.id || entry.name || entry.msg) {
+      update.$push = { completeHistory: entry };
+    }
+
     const updatedCase = await Case.findByIdAndUpdate(
       id,
-      { $set: { isComplete } },
+      update,
       { new: true }
     );
 
